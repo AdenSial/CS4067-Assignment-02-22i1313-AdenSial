@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  user-service:
+    build:
+      context: ./user-service
+    image: user_service_image
+    restart: always
+    environment:
+      USER_DB_URL: postgresql://postgres:aden2003@user_db:5432/userdb
+      SECRET_KEY: your-secure-key-123
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    depends_on:
+      - user_db
+
+  event-service:
+    build:
+      context: ./event-service
+    image: event_service_image
+    restart: always
+    environment:
+      MONGO_URI: mongodb://mongo_db:27017
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+    depends_on:
+      - mongo_db
+
+  booking-service:
+    build:
+      context: ./booking-service
+    image: booking_service_image
+    restart: always
+    environment:
+      BOOKING_DB_URL: postgresql://postgres:aden2003@booking_db:5432/bookingdb
+      FLASK_SECRET_KEY: your-secret-key
+    ports:
+      - "5003:5003"
+    networks:
+      - app-network
+    depends_on:
+      - booking_db
+
+  notification-service:
+    build:
+      context: ./notification-service
+    image: notification_service_image
+    restart: always
+    ports:
+      - "5004:5004"
+    environment:
+      MONGO_URL: mongo_db
+      MONGO_PORT: 27017
+      MONGO_DB: notifications_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      MAIL_SERVER: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: i221313@nu.edu.pk
+      MAIL_PASSWORD: adenn2003
+    networks:
+      - app-network
+    depends_on:
+      - rabbitmq
+      - mongo_db
+
+  booking_db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: aden2003
+      POSTGRES_DB: bookingdb
+    ports:
+      - "5435:5432"
+    networks:
+      - app-network
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  user_db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: aden2003
+      POSTGRES_DB: userdb
+    ports:
+      - "5434:5432"
+    networks:
+      - app-network
+    volumes:
+      - user-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+
+  mongo_db:
+    image: mongo:6.0
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+    volumes:
+      - mongo-data:/data/db
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  mongo-data:
+  user-data:
